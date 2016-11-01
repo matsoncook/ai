@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Matrix2d</title>
+
+<script type="text/javascript" src="/plot/matrix2d.js"></script>
+<script type="text/javascript" src="/plot/anntwolayer.js"></script>
+<script type="text/javascript" src="/plot/annstack.js"></script>
+<script type="text/javascript" src="/plot/anntwolayertest.js"></script>
+<script type="text/javascript" src="/plot/annstacktest.js"></script>
+<script type="text/javascript" src="/plot/point2d.js"></script>
+<script type="text/javascript" src="/plot/plot.js"></script>
+<script type="text/javascript" src="/plot/plottest.js"></script>
+<script type="text/javascript" >
+
+var plotGenerator;
+var ann;
+function learn1()
+{
+}
+function learn()
+{
+	   setTimeout(function(){},100);
+	   setProcessingVisible(true);
+	   var pt = new PlotTest();
+	   pt.iterations = parseFloat( document.getElementById("iterations").value);
+	   pt.stackSize = parseFloat( document.getElementById("stackSize").value);
+	   pt.testBatchSize = parseFloat( document.getElementById("testBatchSize").value);
+	   ann = pt.learn(pt.iterations,pt.testBatchSize,pt.plotSize,pt.stackSize);
+	    var succesPercentage = pt.testAgainst(ann,pt.iterations,pt.testBatchSize,pt.plotSize,pt.tolerance);
+	    //console.log("Failures: " +(100*failuresM)/(pt.iterations*pt.testBatchSize) +"%");
+	    
+	    //document.write(failuresM);
+	     document.getElementById("succesPercentage").value = succesPercentage+"%";
+	     document.getElementById("deviation").value = pt.deviation+"%";
+	    plotGenerator = new PlotGenerator(1,pt.plotSize);
+	    setProcessingVisible(false);
+	    
+	    //createNextPlot();
+}
+function createNextPlot(pg)
+{
+    var plot = pg.createPlot();
+    
+    ann.initialLayer=createMatrix2dFromArray(plotGenerator.createQuestionArray(plot));
+    //ann.initialLayer= ann.initialLayer.transpose();
+    var result = ann.feedForward();
+   
+    
+    plot.annPoint = new Point2d();
+
+    plot.annPoint.x = result.matrix[0][0];
+    plot.annPoint.y = result.matrix[0][1];
+    return plot;
+}
+function drawNextPlot()
+{
+	var plot = createNextPlot(plotGenerator);
+	
+	var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    var width =  canvas.width;
+    var height =  canvas.height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    
+    
+    // Fill with gradient
+    ctx.fillStyle = "#0000FF";
+    ctx.strokeStyle = "#0000FF";
+    ctx.lineWidth="1";
+    for(var i = 0; i < plot.plotList.length; i++)
+    {
+        ctx.fillRect(plot.plotList[i].x*width-1,plot.plotList[i].y*height-1,2,2);
+        
+        ctx.beginPath();
+        ctx.rect(plot.plotList[i].x*width-5,plot.plotList[i].y*height-5,10,10);
+        ctx.stroke();
+
+        
+    }
+    
+    ctx.fillStyle = "#00FF00";
+    ctx.fillRect(plot.answerPoint.x*width-5,plot.answerPoint.y*height-5,10,10);
+    
+    var vel = clonePoint2d(plot.answerPoint);
+    vel.subtract(plot.velocityVector);
+    ctx.fillStyle = "#0000FF";
+    ctx.fillRect(vel.x*width-5,vel.y*height-5,10,10);
+
+    ctx.fillStyle = "#FF00FF";
+    ctx.strokeStyle = "#FF00FF";
+    ctx.lineWidth="2";
+    canvas_arrow(ctx,vel.x*width,vel.y*height,plot.answerPoint.x*width,plot.answerPoint.y*height);
+    
+    ctx.fillStyle = "#FF0000";
+    ctx.strokeStyle = "#FF0000";
+    ctx.lineWidth="1";
+    ctx.fillRect(plot.annPoint.x*width-1,plot.annPoint.y*height-1,4,4);
+    ctx.beginPath();
+    ctx.rect(plot.annPoint.x*width-5,plot.annPoint.y*height-5,10,10);
+    ctx.stroke();
+}
+function isNumber(evt) {
+    evt = (evt) ? evt : window.event;
+    var charCode = (evt.which) ? evt.which : evt.keyCode;
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+        return false;
+    }
+    return true;
+}
+function setProcessingVisible(visible) {
+    var img = document.getElementById("annProcessingImg");
+    img.style.visibility = (visible ? 'visible' : 'hidden');
+    console.log("img.style.visibility: " +img.style.visibility);
+}
+function canvas_arrow(context, fromx, fromy, tox, toy){
+	context.beginPath();
+    var headlen = 10;   // length of head in pixels
+    var angle = Math.atan2(toy-fromy,tox-fromx);
+    context.moveTo(fromx, fromy);
+    context.lineTo(tox, toy);
+    context.lineTo(tox-headlen*Math.cos(angle-Math.PI/6),toy-headlen*Math.sin(angle-Math.PI/6));
+    context.moveTo(tox, toy);
+    context.lineTo(tox-headlen*Math.cos(angle+Math.PI/6),toy-headlen*Math.sin(angle+Math.PI/6));
+    context.stroke();
+}
+</script>
+</head>
+<body>
+
+<p id="demo">Artificial neural network for plot inference</p>
+<script type="text/javascript">
+
+
+
+
+</script>
+<canvas id="myCanvas" width="600" height="600" style="border:1px solid #000000;">
+</canvas>
+<br>
+
+<table> 
+	<tbody> 
+		<tr> 
+			<td>
+				<table>
+				<thead>Ann Settings</thead>
+				<tbody>
+				
+				<tr><td>Stack Size</td><td><input type="text" id="stackSize" value="3"></td></tr>
+				<tr><td>Batch Size</td><td><input type="text" id="testBatchSize" value="3"></td></tr>
+				<tr><td></td><td></td></tr>
+				</tbody>
+				</table>
+			</td>
+
+			<td>
+				<table>
+				<thead>Learn Settings</thead>
+				<tbody>
+				<tr><td>Repetitions</td><td><input type="text" id="iterations" value="1000"></td></tr>
+				<tr><td>Tolerance</td><td><input type="text" id="stackSize" value="3"></td></tr>
+				<tr><td></td><td><button type="button" onclick="learn();drawNextPlot()" >Learn</button></td></tr>
+				</tbody>
+				</table>
+			</td>
+
+			<td style="background-color: #aaffaa;">
+			<table>
+				<thead>Results</thead>
+				<tbody>
+				<tr><td>Success</td><td><input type="text" id="succesPercentage"></td></tr>
+				<tr><td>Deviation</td><td><input type="text" id="deviation"></td></tr>
+				<tr><td></td><td><button type="button" onclick="drawNextPlot()" >Next</button></td></tr>				
+				</tbody>
+				</table>
+			</td>
+
+		</tr>
+
+	</tbody>
+
+</table>
+
+<div id="annProcessing"><img id="annProcessingImg" src="/images/200w.gif" alt="Ann processing" style="width:100px;height:100px;"><br></div>
+
+<script type="text/javascript">
+learn();
+drawNextPlot();
+</script>
+</body>
+</html>
